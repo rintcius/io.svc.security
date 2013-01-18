@@ -36,8 +36,8 @@ object authentication {
     }
   }
 
-  object SimpleCredentialsExtractor extends CredentialsExtractor[SimpleRequest, SimpleCredentials, String] {
-    override def extractCredentials(in: SimpleRequest): Validation[String, SimpleCredentials] = {
+  object SimpleCredentialsExtractor extends Extractor[SimpleRequest, SimpleCredentials, String] {
+    override def extract(in: SimpleRequest): Validation[String, SimpleCredentials] = {
       val oCred = for {
         username <- in.username
         password <- in.password

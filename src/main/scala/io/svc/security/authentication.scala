@@ -116,7 +116,7 @@ object authentication {
    */
   trait CredentialsInputValidator[In, Credentials, User, +F] extends InputValidator[In, User, F] {
 
-    val credentialsExtractor: CredentialsExtractor[In, Credentials, F]
+    val credentialsExtractor: Extractor[In, Credentials, F]
     val authService: AuthenticationService[Credentials, User, F]
 
     /**
@@ -127,16 +127,16 @@ object authentication {
      * @return the result of the validation
      */
     override def validateInput(in: In): Validation[F, User] = {
-      credentialsExtractor.extractCredentials(in).fold(
+      credentialsExtractor.extract(in).fold(
         failure = { f => Failure(f) },
         success = { user => authService.authenticate(user) }
       )
     }
   }
 
-  trait CredentialsExtractor[In, +Credentials, +F] {
+  trait Extractor[In, +Extracted, +F] {
 
-    def extractCredentials(in: In): Validation[F, Credentials]
+    def extract(in: In): Validation[F, Extracted]
   }
 
   /**

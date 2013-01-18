@@ -15,8 +15,8 @@ class stdTest extends Specification {
 
   val auth = new Authentication[SimpleRequest, SimpleResult, SimpleUser, AuthenticationFailure] {
     val inputValidator = new CredentialsInputValidator[SimpleRequest, UsernamePasswordCredentials, SimpleUser, AuthenticationFailure] {
-      val credentialsExtractor = new CredentialsExtractor[SimpleRequest, UsernamePasswordCredentials, AuthenticationFailure] {
-        override def extractCredentials(in: SimpleRequest): Validation[AuthenticationFailure, UsernamePasswordCredentials] = {
+      val credentialsExtractor = new Extractor[SimpleRequest, UsernamePasswordCredentials, AuthenticationFailure] {
+        override def extract(in: SimpleRequest): Validation[AuthenticationFailure, UsernamePasswordCredentials] = {
           val oCred = for {
             username <- in.username
             password <- in.password
