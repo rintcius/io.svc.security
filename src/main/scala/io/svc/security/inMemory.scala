@@ -1,7 +1,7 @@
 package io.svc.security
 
 import scalaz.{Success, Failure, Validation}
-import io.svc.security.user.{UsersProvider, UserService, UserWithUsername}
+import io.svc.security.user.{UsersProvider, UserService, UserWithKey}
 import io.svc.security.std.{UsernameNotFound, UserServiceFailure}
 
 /**
@@ -9,20 +9,20 @@ import io.svc.security.std.{UsernameNotFound, UserServiceFailure}
  */
 object inMemory {
 
-  trait InMemoryUserService[Username] extends UserService[Username, UserServiceFailure] {
+  trait InMemoryUserService[Key] extends UserService[UserWithKey[Key], Key, UserServiceFailure] {
 
-    val usersProvider: UsersProvider[Username]
+    val usersProvider: UsersProvider[UserWithKey[Key]]
 
-    lazy val userMap: Map[Username, UserWithUsername[Username]] =
-      usersProvider.users.foldLeft (Map(): Map[Username, UserWithUsername[Username]]) { (map: Map[Username, UserWithUsername[Username]], user: UserWithUsername[Username]) => addEntry(map, user) }
+    lazy val userMap: Map[Key, UserWithKey[Key]] =
+      usersProvider.users.foldLeft (Map(): Map[Key, UserWithKey[Key]]) { (map: Map[Key, UserWithKey[Key]], user: UserWithKey[Key]) => addEntry(map, user) }
 
-    override def findByUsername(username: Username): Validation[UserServiceFailure, UserWithUsername[Username]] = {
-      userMap.get(username) map { Success(_) } getOrElse(Failure(UsernameNotFound(username)))
+    override def get(key: Key): Validation[UserServiceFailure, UserWithKey[Key]] = {
+      userMap.get(key) map { Success(_) } getOrElse(Failure(UsernameNotFound(key)))
     }
   }
 
-  private def addEntry[Username](m: Map[Username, UserWithUsername[Username]], user: UserWithUsername[Username]): Map[Username, UserWithUsername[Username]] = {
-    m + (user.username -> user)
+  private def addEntry[Key](m: Map[Key, UserWithKey[Key]], user: UserWithKey[Key]): Map[Key, UserWithKey[Key]] = {
+    m + (user.provideKey -> user)
   }
 
 }

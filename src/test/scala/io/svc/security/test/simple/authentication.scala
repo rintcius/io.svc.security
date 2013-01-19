@@ -4,7 +4,7 @@ import io.svc.security.authentication._
 import scalaz.Validation
 import scalaz.Failure
 import scalaz.Success
-import io.svc.security.user.{UserWithUsername, UserProvider}
+import io.svc.security.user.{UserWithKey, UserProvider}
 
 /**
  * Simple implementation of [[io.svc.security.authentication]] used for testing.
@@ -16,7 +16,9 @@ object authentication {
 
   case class SimpleRequest(request: String, username: Option[String] = None, password: Option[String] = None)
 
-  case class SimpleUser(username: String, password: String, email: String) extends UserWithUsername[String]
+  case class SimpleUser(username: String, password: String, email: String) extends UserWithKey[String] {
+    val provideKey:String = username
+  }
 
   case class SimpleRequestWithUser()
 

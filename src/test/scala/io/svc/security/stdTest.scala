@@ -4,7 +4,7 @@ import org.specs2.mutable.Specification
 import io.svc.security.authentication._
 import test.simple.authentication._
 import io.svc.security.std._
-import io.svc.security.user.{UsernamePasswordCredentialsAuthenticationService, CredentialsValidator}
+import io.svc.security.user.{UserService, UsernamePasswordCredentialsAuthenticationService, CredentialsValidator}
 import scalaz._
 
 /**
@@ -25,7 +25,8 @@ class stdTest extends Specification {
         }
       }
       val authService = new UsernamePasswordCredentialsAuthenticationService[SimpleUser] {
-        val userService = new StdInMemoryUserService[String](Seq(joe))
+        //TODO get rid of asInstanceOf
+        val userService: UserService[SimpleUser, String, AuthenticationFailure] = new StdInMemoryUserService[String](Seq(joe)).asInstanceOf[UserService[SimpleUser, String, AuthenticationFailure]]
         val credentialsValidator = new CredentialsValidator[SimpleUser, UsernamePasswordCredentials, AuthenticationFailure] {
           override def validate[ASimpleUser, AUsernamePasswordCredentials](user: ASimpleUser, credentials: AUsernamePasswordCredentials) = {
             if (credentials.asInstanceOf[UsernamePasswordCredentials].password == user.asInstanceOf[SimpleUser].password) {

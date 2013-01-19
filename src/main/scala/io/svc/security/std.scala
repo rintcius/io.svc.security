@@ -18,7 +18,7 @@ object std {
 
   case class UsernamePasswordCredentials(username: String, password: String)
 
-  class StdInMemoryUserService[Username](users: Seq[UserWithUsername[Username]]) extends InMemoryUserService[Username] {
-    val usersProvider = new UsersProvider[Username] { def users = StdInMemoryUserService.this.users }
+  class StdInMemoryUserService[Key](users: Seq[UserWithKey[Key]]) extends InMemoryUserService[Key] {
+    val usersProvider = new UsersProvider[UserWithKey[Key]] { def users = StdInMemoryUserService.this.users }
   }
 }

@@ -13,33 +13,31 @@ object user {
     def user: User
   }
 
-  trait UserWithUsername[+Username] {
-    def username: Username
+  trait UserWithKey[+Key] {
+    def provideKey: Key
   }
 
-  trait UserService[Username, +Failure] {
-    def findByUsername(username: Username): Validation[Failure, UserWithUsername[Username]]
+  trait UserService[+User, Key, +Failure] {
+    def get(key: Key): Validation[Failure, User]
   }
 
   trait CredentialsValidator[+User, +Credentials, +Failure] {
     def validate[A >: User, B >: Credentials](user: A, credentials: B): Validation[Failure, A]
   }
 
-  trait UsernamePasswordCredentialsAuthenticationService[User <: UserWithUsername[String]] extends AuthenticationService[UsernamePasswordCredentials, User, AuthenticationFailure] {
-    val userService: UserService[String, AuthenticationFailure]
+  trait UsernamePasswordCredentialsAuthenticationService[User] extends AuthenticationService[UsernamePasswordCredentials, User, AuthenticationFailure] {
+    val userService: UserService[User, String, AuthenticationFailure]
     val credentialsValidator: CredentialsValidator[User, UsernamePasswordCredentials, AuthenticationFailure]
     override def authenticate(credentials: UsernamePasswordCredentials): Validation[AuthenticationFailure, User] = {
-      //TODO get rid of the asInstanceOf
-      val oUser: Validation[io.svc.security.std.AuthenticationFailure,User] = userService.findByUsername(credentials.username).asInstanceOf[Validation[io.svc.security.std.AuthenticationFailure,User]]
+      val oUser: Validation[io.svc.security.std.AuthenticationFailure,User] = userService.get(credentials.username)
       oUser match {
         case Failure(f) => Failure(AuthenticationServiceFailure(f))
-          //TODO get rid of the asInstanceOf
-        case Success(user) => credentialsValidator.validate[UserWithUsername[String], UsernamePasswordCredentials](user: UserWithUsername[String], credentials: UsernamePasswordCredentials).asInstanceOf[Validation[io.svc.security.std.AuthenticationFailure,User]]
+        case Success(user) => credentialsValidator.validate[User, UsernamePasswordCredentials](user: User, credentials: UsernamePasswordCredentials)
       }
     }
   }
 
-  trait UsersProvider[+Username] {
-    def users: Seq[UserWithUsername[Username]]
+  trait UsersProvider[+User] {
+    def users: Seq[User]
   }
 }
