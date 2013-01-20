@@ -4,8 +4,10 @@ import org.specs2.mutable.Specification
 import io.svc.security.authentication._
 import test.simple.authentication._
 import io.svc.security.std._
-import io.svc.security.user.{UserService, UsernamePasswordCredentialsAuthenticationService, CredentialsValidator}
+import io.svc.security.user.{CredentialsVerifier, UserService, UsernamePasswordCredentialsAuthenticationService}
 import scalaz._
+import io.svc.core.function.Extractor
+import io.svc.core.validation.{ValidatingSuccessActionHandler, FailureHandler}
 
 /**
  * @author Rintcius Blok
@@ -13,8 +15,10 @@ import scalaz._
 class stdTest extends Specification {
   val joe = SimpleUser("Joe", "password4joe", "joe@mymail.com")
 
-  val auth = new Authentication[SimpleRequest, SimpleResult, SimpleUser, AuthenticationFailure] {
-    val inputValidator = new CredentialsInputValidator[SimpleRequest, UsernamePasswordCredentials, SimpleUser, AuthenticationFailure] {
+  val auth = new ValidatingSuccessActionHandler[SimpleRequest, SimpleUser, SimpleResult] {
+    type Failure = AuthenticationFailure
+    val validator = new CredentialsValidator[SimpleRequest, SimpleUser, AuthenticationFailure] {
+      type Credentials = UsernamePasswordCredentials
       val credentialsExtractor = new Extractor[SimpleRequest, UsernamePasswordCredentials, AuthenticationFailure] {
         override def extract(in: SimpleRequest): Validation[AuthenticationFailure, UsernamePasswordCredentials] = {
           val oCred = for {
@@ -24,11 +28,11 @@ class stdTest extends Specification {
           oCred map (Success(_)) getOrElse Failure(AuthenticationServiceFailure("cannot extract credentials"))
         }
       }
-      val authService = new UsernamePasswordCredentialsAuthenticationService[SimpleUser] {
+      val authenticationService = new UsernamePasswordCredentialsAuthenticationService[SimpleUser] {
         //TODO get rid of asInstanceOf
         val userService: UserService[SimpleUser, String, AuthenticationFailure] = new StdInMemoryUserService[String](Seq(joe)).asInstanceOf[UserService[SimpleUser, String, AuthenticationFailure]]
-        val credentialsValidator = new CredentialsValidator[SimpleUser, UsernamePasswordCredentials, AuthenticationFailure] {
-          override def validate[ASimpleUser, AUsernamePasswordCredentials](user: ASimpleUser, credentials: AUsernamePasswordCredentials) = {
+        val credentialsVerifier = new CredentialsVerifier[SimpleUser, UsernamePasswordCredentials, AuthenticationFailure] {
+          override def verify[ASimpleUser, AUsernamePasswordCredentials](user: ASimpleUser, credentials: AUsernamePasswordCredentials) = {
             if (credentials.asInstanceOf[UsernamePasswordCredentials].password == user.asInstanceOf[SimpleUser].password) {
               Success(user)
             } else {
@@ -38,13 +42,13 @@ class stdTest extends Specification {
         }
       }
     }
-    val authFailureHandler = new AuthenticationFailureHandler[SimpleRequest, AuthenticationFailure, SimpleResult] {
-      override def onAuthenticationFailure(request: SimpleRequest, failure: AuthenticationFailure) = SimpleFailureResult(request, failure.toString)
+    val failureHandler = new FailureHandler[SimpleRequest, AuthenticationFailure, SimpleResult] {
+      override def handleFailure(request: SimpleRequest, failure: AuthenticationFailure) = SimpleFailureResult(request, failure.toString)
     }
   }
   def echo(req: SimpleRequest, user: SimpleUser): SimpleResult = SimpleSuccessResult(req, user)
 
-  def authenticatedEcho = auth.authentication(echo)
+  def authenticatedEcho = auth.onSuccess(echo)
 
   //TODO define the failures properly
 

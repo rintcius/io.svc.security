@@ -9,10 +9,6 @@ import io.svc.security.std.{AuthenticationServiceFailure, AuthenticationFailure,
  */
 object user {
 
-  trait UserProvider[+User] {
-    def user: User
-  }
-
   trait UserWithKey[+Key] {
     def provideKey: Key
   }
@@ -21,18 +17,18 @@ object user {
     def get(key: Key): Validation[Failure, User]
   }
 
-  trait CredentialsValidator[+User, +Credentials, +Failure] {
-    def validate[A >: User, B >: Credentials](user: A, credentials: B): Validation[Failure, A]
+  trait CredentialsVerifier[+User, +Credentials, +Failure] {
+    def verify[A >: User, B >: Credentials](user: A, credentials: B): Validation[Failure, A]
   }
 
   trait UsernamePasswordCredentialsAuthenticationService[User] extends AuthenticationService[UsernamePasswordCredentials, User, AuthenticationFailure] {
     val userService: UserService[User, String, AuthenticationFailure]
-    val credentialsValidator: CredentialsValidator[User, UsernamePasswordCredentials, AuthenticationFailure]
+    val credentialsVerifier: CredentialsVerifier[User, UsernamePasswordCredentials, AuthenticationFailure]
     override def authenticate(credentials: UsernamePasswordCredentials): Validation[AuthenticationFailure, User] = {
       val oUser: Validation[io.svc.security.std.AuthenticationFailure,User] = userService.get(credentials.username)
       oUser match {
         case Failure(f) => Failure(AuthenticationServiceFailure(f))
-        case Success(user) => credentialsValidator.validate[User, UsernamePasswordCredentials](user: User, credentials: UsernamePasswordCredentials)
+        case Success(user) => credentialsVerifier.verify[User, UsernamePasswordCredentials](user: User, credentials: UsernamePasswordCredentials)
       }
     }
   }
